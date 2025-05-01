@@ -105,7 +105,7 @@ def save_metadata(config_path, n_events, output_path, args_dict):
     with open(config_path, 'r') as f:
         config_data = yaml.safe_load(f)
     meta["config_snapshot"] = config_data
-
+    meta["output_tag"] = output_path.parent.name
     meta_path = Path(output_path).with_suffix(".meta.yaml")
     with open(meta_path, 'w') as f:
         yaml.dump(meta, f)
@@ -119,8 +119,13 @@ def main(config_path, generate=True, smear=True, n_override=None, args_dict=None
     det_cfg = config.get("detector", {})
     paths = config["paths"]
 
-    raw_path = PROJECT_ROOT / paths["output_data_raw"]
-    smeared_path = PROJECT_ROOT / paths["output_data_smeared"]
+    # Use config filename (without extension) as output tag
+    config_tag = Path(config_path).stem
+    output_dir = PROJECT_ROOT / "data" / config_tag
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_path = output_dir / "raw.csv"
+    smeared_path = output_dir / "smeared.csv"
 
     n_events = n_override if n_override else sim_cfg["n_events"]
 
