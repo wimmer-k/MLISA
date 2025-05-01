@@ -53,7 +53,7 @@ Each run creates a folder based on the config filename (e.g. sim1.yaml -> data/s
 
 ```bash
 data/sim1/
-|-- raw.csv                 # Truth-level simulation (no smearing)
+|-- raw.csv                # Truth-level simulation (no smearing)
 |-- raw.meta.yaml          # Metadata snapshot
 |-- smeared.csv            # With detector-like resolution applied
 |-- smeared.meta.yaml      # Metadata snapshot
