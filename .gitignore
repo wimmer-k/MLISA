@@ -1,6 +1,9 @@
 # Byte-compiled / cache
 __pycache__/
 
+# backup files
+*~
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
 

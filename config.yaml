@@ -1,0 +1,17 @@
+simulation:
+  Z: 50
+  A: 132
+  n_events: 100000
+  reaction_prob: 0.1
+  layers: 5
+  b_min: 0.6
+  b_max: 0.7
+  eloss_scaling: 0.1  # or whatever factor you need to match ~300 MeV/layer
+  layer_thickness: [0.4997, 0.5123, 0.5211, 0.5263, 0.5337]
+
+detector:
+  energy_resolution: [0.013, 0.014, 0.012, 0.012, 0.013]  # ~3% (FWHM) per layer
+
+paths:
+  output_data_raw: data/raw/simulated_data.csv
+  output_data_smeared: data/processed/simulated_data_smeared.csv
