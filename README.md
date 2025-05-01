@@ -1,6 +1,8 @@
-# LISA: LIfetime measurements with Solid Active targets
+# MLISA - Machine Learning for LISA
 
-**LISA** is a simulation and analysis toolkit developed for studying particles interacting with layered **solid active targets**. The project supports configurable beam parameters, in-target reactions, and detector response modeling - with outputs ready for machine learning-based lifetime and reaction position analysis.
+**MLISA** is a simulation and analysis toolkit developed for the **LISA** project (*LIfetime measurements with Solid Active targets*). It is designed to generate and prepare data from active target detectors for use in machine learning workflows, particularly for identifying reaction layers, estimating energy loss, and supporting lifetime analysis.
+
+This framework simulates particle interactions in layered solid targets, models detector resolution effects, and produces clean, structured outputs for analysis or ML training.
 
 ---
 
