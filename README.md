@@ -21,6 +21,7 @@
 
 ```bash
 python scripts/generate_data.py
+---
 
 ###  Use a custom config file
 
