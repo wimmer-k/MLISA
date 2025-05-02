@@ -12,6 +12,8 @@ simulation:
 detector:
   energy_resolution: [0.013, 0.014, 0.012, 0.012, 0.013]  # ~3% (FWHM) per layer
 
-paths:
-  output_data_raw: data/raw/simulated_data.csv
-  output_data_smeared: data/processed/simulated_data_smeared.csv
+analysis:
+  features: ['b_in', 'b_out', 'dE_1', 'dE_2', 'dE_3', 'dE_4', 'dE_5']
+  target: reaction_layer
+  models: ['logreg', 'rf', 'knn', 'gb']
+  test_size: 0.25

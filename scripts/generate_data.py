@@ -17,10 +17,16 @@ from scripts.paths import PROJECT_ROOT, load_config
 u = 931.5 # atomic mass unit
 
 def kinetic_energy(A, beta):
+    """
+    Calculate kinetic energy from relativistic beta
+    """
     gamma = 1 / np.sqrt(1 - beta**2)
     return (gamma - 1) * A * u
 
 def beta(A, E_kin):
+    """
+    Calculate relativistic beta from kinetic energy
+    """
     gamma = E_kin / (A * u) + 1
     beta = np.sqrt(1 - 1 / gamma**2)
     return beta
@@ -73,9 +79,15 @@ def simulate_event(Z, A, b_min, b_max, layers, reaction_prob, layer_thickness, e
     }
 
 def generate_dataset(n, **kwargs):
+    """
+    Run the simulation and generate the dataset.
+    """
     return [simulate_event(**kwargs) for _ in tqdm(range(n), desc="Generating events")]
 
 def apply_energy_smearing(df, resolutions):
+    """
+    Add optional detector resolution.
+    """
     dE_cols = [col for col in df.columns if col.startswith("dE_")]
     if isinstance(resolutions, (float, int)):
         resolutions = [resolutions] * len(dE_cols)
@@ -89,6 +101,9 @@ def apply_energy_smearing(df, resolutions):
     return df_smeared
 
 def save_metadata(config_path, n_events, output_path, args_dict):
+    """
+    Save the meta data for reproducibility
+    """
     meta = {
         "timestamp": datetime.datetime.now().isoformat(),
         "n_events": n_events,
@@ -112,12 +127,14 @@ def save_metadata(config_path, n_events, output_path, args_dict):
     print(f"Saved metadata to {meta_path}")
 
 def main(config_path, generate=True, smear=True, n_override=None, args_dict=None):
+    """
+    Run simulation based on configuration file and commandline input, save data and meta data to file
+    """
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
     sim_cfg = config["simulation"]
     det_cfg = config.get("detector", {})
-    paths = config["paths"]
 
     # Use config filename (without extension) as output tag
     config_tag = Path(config_path).stem

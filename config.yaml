@@ -11,7 +11,3 @@ simulation:
 
 detector:
   energy_resolution: [0.013, 0.014, 0.012, 0.012, 0.013]  # ~3% (FWHM) per layer
-
-paths:
-  output_data_raw: data/raw/simulated_data.csv
-  output_data_smeared: data/processed/simulated_data_smeared.csv
