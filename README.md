@@ -7,8 +7,6 @@ This framework simulates particle interactions in layered solid targets, models 
 MLISA consists of modular Python scripts for data generation, simulation, visualization, and machine learning analysis.
 
 
----
-
 ##  Features
 
 - Physics-driven simulation (relativistic energy loss)
@@ -19,7 +17,6 @@ MLISA consists of modular Python scripts for data generation, simulation, visual
 - Benchmarking and evaluation of ML models
 - Structured `.csv` and `.yaml` outputs with metadata
 
----
 
 ## Simulation and data generation
 
@@ -69,8 +66,6 @@ Control number of events
 python3 scripts/generate_data.py -n 50000
 ```
 
----
-
 ## Visualizing Energy Loss Distributions
 
 The `visualize_data.py` script creates useful plots of the simulated data.
@@ -94,8 +89,6 @@ python3 scripts/visualize_data.py --data data/sim1/smeared.csv --plot-type scatt
 You can combine with `--by-reaction` to generate separate scatter plots by reaction layer.
 
 All plots can be saved using `--outdir results/sim1/` and disabled from displaying with `--no-show`.
-
----
 
 ## Model benchmarking
 
@@ -121,8 +114,6 @@ Results are saved to a `results/<config_name>/` folder, including:
 - Classification reports (`.txt`)
 - Feature importances (`.csv`)
 
----
-
 ## Output Structure
 
 Each simulation run produces structured outputs in a `data/<config_name>/` folder:
@@ -143,8 +134,6 @@ results/<config_name>/
 |-- *.csv                  # Feature importance, confusion matrix tables
 |-- *.txt                  # Model evaluation summaries
 ```
-
----
 
 ## Configuration Example (configs/sim1.yaml)
 
@@ -170,7 +159,6 @@ analysis:
   test_size: 0.25
   models: ['logreg', 'rf', 'knn', 'gb']
 ```
----
 
 ## Coming Soon
 
@@ -179,4 +167,3 @@ analysis:
 - Regression-based position prediction
 - Integration of GEANT-based data
 
----
