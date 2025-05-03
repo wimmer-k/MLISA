@@ -111,13 +111,46 @@ def plot_scatter_vs_b_in(df, outdir=None, show_plot=True, by_reaction=False):
         else:
             plt.close()
             
+def plot_reaction_depth_distribution(df, outdir=None, show_plot=True):
+    if "reaction_depth" not in df.columns or "reaction_layer" not in df.columns:
+        print("Missing columns in data.")
+        return
+
+    df_reacted = df[df["reaction_layer"] > 0]
+    if df_reacted.empty:
+        print("No reaction events found.")
+        return
+
+    layers = sorted(df_reacted["reaction_layer"].unique())
+    n_layers = len(layers)
+    fig, axes = plt.subplots(n_layers, 1, figsize=(7, 4 * n_layers), sharex=False)
+
+    if n_layers == 1:
+        axes = [axes]  # ensure it's iterable
+
+    for i, layer in enumerate(layers):
+        ax = axes[i]
+        subset = df_reacted[df_reacted["reaction_layer"] == layer]
+        ax.scatter(subset["reaction_depth"], subset[f"dE_{layer}"], alpha=0.3, s=10)
+        ax.set_title(f"Layer {layer}: Reaction Depth vs Energy Deposit")
+        ax.set_xlabel("Reaction Depth [arb. units]")
+        ax.set_ylabel(f"dE_{layer} [MeV]")
+
+    plt.tight_layout()
+    if outdir:
+        plt.savefig(Path(outdir) / "depth_vs_energy_per_layer.png")
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="3D plot of energy loss histograms")
     parser.add_argument("--data", type=str, required=True, help="Path to smeared.csv")
     parser.add_argument("--outdir", type=str, default=None, help="Folder to save plots")
     parser.add_argument("--no-show", action="store_true", help="Don't show plots interactively")
     parser.add_argument("--by-reaction", action="store_true", help="Split plots by reaction_layer")
-    parser.add_argument("--plot-type", type=str, default="hist3d", choices=["hist3d", "scatter"], help="Which plot to generate")
+    parser.add_argument("--plot-type", type=str, default="hist3d", choices=["hist3d", "scatter", "depth"], help="Which plot to generate")
     args = parser.parse_args()
 
     df = pd.read_csv(args.data).dropna()
@@ -129,4 +162,8 @@ if __name__ == "__main__":
     elif args.plot_type == "scatter":
         plot_scatter_vs_b_in(
             df, outdir=args.outdir, show_plot=not args.no_show, by_reaction=args.by_reaction
+        )
+    elif args.plot_type == "depth":
+        plot_reaction_depth_distribution(
+            df, outdir=args.outdir, show_plot=not args.no_show
         )

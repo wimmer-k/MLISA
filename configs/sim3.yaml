@@ -15,7 +15,7 @@ simulation:
   layer_thickness: [0.4997, 0.5123, 0.5211, 0.5263, 0.5337]
 
 detector:
-  energy_resolution: [0.03, 0.03, 0.03, 0.03, 0.03]  # ~3% (sigma) per layer
+  energy_resolution: [0.0, 0.0, 0.0, 0.0, 0.0] 
 
 analysis:
   features: ['b_in', 'b_out', 'dE_1', 'dE_2', 'dE_3', 'dE_4', 'dE_5']

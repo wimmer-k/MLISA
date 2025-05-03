@@ -31,12 +31,13 @@ def beta(A, E_kin):
     beta = np.sqrt(1 - 1 / gamma**2)
     return beta
 
-def simulate_event(Z, A, b_in, layers, reaction_prob, layer_thickness, eloss_scaling = 1.0):
+def simulate_event(Z, A, b_in, layers, reaction_prob, layer_thickness, delta_Z=1, eloss_scaling = 1.0):
     """
     Simulate one particle through a layered detector with potential reaction.
     """
     b = b_in
     current_Z = Z
+    current_A = A
     E_losses = []
     reacted = False
     reaction_layer = 0  # 0 means no reaction
@@ -44,30 +45,46 @@ def simulate_event(Z, A, b_in, layers, reaction_prob, layer_thickness, eloss_sca
     
     for i in range(layers):
         thickness = layer_thickness[i]
-        E_kin = kinetic_energy(A,b)
-        # Simple stopping power model: dE/dx ~ Z^2 / b^2
-        stopping_power = (current_Z ** 2) / (b ** 2) * eloss_scaling
-        delta_E = stopping_power * thickness
-        E_losses.append(delta_E)
-        # print(current_Z,b,E_kin/A,delta_E)
-
-        # Placeholder for future depth-resolved dE:
-        # If reaction occurs here, to be adjusted later.
-        # Reaction chance
         reaction_chance = reaction_prob * (thickness / np.mean(layer_thickness))
         if not reacted and np.random.rand() < reaction_chance:
             reacted = True
             reaction_layer = i + 1
-            current_Z = max(current_Z - 1, 1)
             reaction_depth = np.random.uniform(0, thickness)
-
-            # Future upgrade:
-            # - split delta_E into dE_before + dE_after using reaction_depth
-            # - update beta after first partial step
             
-        # Update velocity
-        E_kin = max(E_kin - delta_E, 1e-6)  # Prevent negative kinetic energy
-        b = beta(A, E_kin)
+            # Pre-reaction energy loss
+            sp_pre = (current_Z ** 2) / (b ** 2) * eloss_scaling
+            dE_pre = sp_pre * reaction_depth
+            
+            E_kin_pre = kinetic_energy(current_A, b)
+            E_kin_post = max(E_kin_pre - dE_pre, 1e-6)
+            b_post = beta(current_A, E_kin_post)
+            
+            # Apply reaction (Z and A change, velocity remains same for this layer)
+            current_Z = max(current_Z - delta_Z, 1)
+            current_A = max(current_A - delta_Z, 1)
+
+            # Post-reaction energy loss
+            d2 = thickness - reaction_depth
+            sp_post = (current_Z ** 2) / (b_post ** 2) * eloss_scaling
+            dE_post = sp_post * d2
+            b = beta(current_A, max(E_kin_post - dE_post, 1e-6))
+
+            delta_E = dE_pre + dE_post
+            
+        else:
+            sp = (current_Z ** 2) / (b ** 2) * eloss_scaling
+            delta_E = sp * thickness
+            
+            E_kin = kinetic_energy(current_A, b)
+            E_kin = max(E_kin - delta_E, 1e-6)
+            b = beta(current_A, E_kin)
+
+        E_losses.append(delta_E)
+
+        # Update kinetic energy and velocity after the whole layer
+        E_kin = kinetic_energy(current_A, b)
+        E_kin = max(E_kin - delta_E, 1e-6)
+        b = beta(current_A, E_kin)
 
     return {
         'b_in': b_in,
@@ -168,6 +185,7 @@ def main(config_path, generate=True, smear=True, n_override=None, args_dict=None
             b_sigma=sim_cfg.get("b_sigma"),
             Z=sim_cfg["Z"],
             A=sim_cfg["A"],
+            delta_Z=sim_cfg["delta_Z"],
             layers=sim_cfg["layers"],
             eloss_scaling=sim_cfg["eloss_scaling"],
             reaction_prob=sim_cfg["reaction_prob"],

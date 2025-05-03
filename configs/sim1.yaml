@@ -1,7 +1,8 @@
 simulation:
   Z: 26
   A: 52
-  n_events: 10000
+  delta_Z: 1
+  n_events: 100000
   reaction_prob: 0.1
   layers: 5
   #velocity_distribution: uniform
@@ -9,8 +10,8 @@ simulation:
   #b_max: 0.7
   velocity_distribution: gaussian
   b_mean: 0.65
-  b_sigma: 0.02
-  eloss_scaling: 0.35  # or whatever factor you need to match ~300 MeV/layer
+  b_sigma: 0.01
+  eloss_scaling: 0.33  # or whatever factor you need to match ~300 MeV/layer
   layer_thickness: [0.4997, 0.5123, 0.5211, 0.5263, 0.5337]
 
 detector:

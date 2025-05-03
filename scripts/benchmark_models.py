@@ -113,29 +113,30 @@ def run_benchmark(config_path, save_outputs, show_plots):
             cm, classes=np.unique(y), title=cm_title,
             save_path=save_img_path, show_plot=show_plots, save_csv_path=save_csv_path
         )
+        if args.save_importance:
+            # Feature importance or permutation importance
+            print("\nFeature Importances:")
+            if hasattr(model, "feature_importances_"):
+                importances = model.feature_importances_
+            elif hasattr(model, "coef_"):
+                importances = model.coef_[0]  # logreg, first class
+            else:
+                result = permutation_importance(model, X_test, y_test, n_repeats=10, random_state=42)
+                importances = result.importances_mean
 
-        # Feature importance or permutation importance
-        print("\nFeature Importances:")
-        if hasattr(model, "feature_importances_"):
-            importances = model.feature_importances_
-        elif hasattr(model, "coef_"):
-            importances = model.coef_[0]  # logreg, first class
-        else:
-            result = permutation_importance(model, X_test, y_test, n_repeats=10, random_state=42)
-            importances = result.importances_mean
+            for name, imp in zip(features, importances):
+                print(f"  {name}: {imp:.3f}")
 
-        for name, imp in zip(features, importances):
-            print(f"  {name}: {imp:.3f}")
-
-        if save_outputs:
-            imp_df = pd.DataFrame({"feature": features, "importance": importances})
-            imp_df.to_csv(results_dir / f"{key}_importance.csv", index=False)
+            if save_outputs:
+                imp_df = pd.DataFrame({"feature": features, "importance": importances})
+                imp_df.to_csv(results_dir / f"{key}_importance.csv", index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmark ML models on smeared simulation data")
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML")
     parser.add_argument("--save", action="store_true", help="Save reports and plots")
     parser.add_argument("--no-show", action="store_true", help="Do not show plots")
+    parser.add_argument("--save-importance", action="store_true", help="Also save feature importances")
     args = parser.parse_args()
 
     run_benchmark(args.config, args.save, show_plots=not args.no_show)
