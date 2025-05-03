@@ -15,6 +15,10 @@ data/
 models/
 !models/README.md
 
+# Results
+results/
+!results/README.md
+
 # Virtual environment
 venv/
 .env/

@@ -31,11 +31,10 @@ def beta(A, E_kin):
     beta = np.sqrt(1 - 1 / gamma**2)
     return beta
 
-def simulate_event(Z, A, b_min, b_max, layers, reaction_prob, layer_thickness, eloss_scaling = 1.0):
+def simulate_event(Z, A, b_in, layers, reaction_prob, layer_thickness, eloss_scaling = 1.0):
     """
     Simulate one particle through a layered detector with potential reaction.
     """
-    b_in = np.random.uniform(b_min, b_max)
     b = b_in
     current_Z = Z
     E_losses = []
@@ -78,11 +77,22 @@ def simulate_event(Z, A, b_min, b_max, layers, reaction_prob, layer_thickness, e
         **{f'dE_{i+1}': E_losses[i] for i in range(layers)}
     }
 
-def generate_dataset(n, **kwargs):
+def generate_dataset(n, velocity_distribution="uniform", b_min=None, b_max=None, b_mean=None, b_sigma=None, **kwargs):
     """
-    Run the simulation and generate the dataset.
+    Generate a dataset of events using simulate_event.
+    Handles velocity distribution setup.
     """
-    return [simulate_event(**kwargs) for _ in tqdm(range(n), desc="Generating events")]
+    if velocity_distribution == "gaussian":
+        assert b_mean is not None and b_sigma is not None, "b_mean and b_sigma must be set for gaussian distribution"
+        betas = np.random.normal(loc=b_mean, scale=b_sigma, size=n)
+        betas = np.clip(betas, 0, 1)
+    else:
+        assert b_min is not None and b_max is not None, "b_min and b_max must be set for uniform distribution"
+        betas = np.random.uniform(low=b_min, high=b_max, size=n)
+
+    return pd.DataFrame([
+        simulate_event(b_in=b, **kwargs) for b in tqdm(betas, desc="Simulating events")
+    ])
 
 def apply_energy_smearing(df, resolutions):
     """
@@ -149,17 +159,20 @@ def main(config_path, generate=True, smear=True, n_override=None, args_dict=None
     # Load or generate
     if generate:
         print(f"Generating {n_events} events...")
-        df = pd.DataFrame(generate_dataset(
-            n=n_events,
+        df = generate_dataset(
+            n=sim_cfg["n_events"],
+            velocity_distribution=sim_cfg.get("velocity_distribution", "uniform"),
+            b_min=sim_cfg.get("b_min"),
+            b_max=sim_cfg.get("b_max"),
+            b_mean=sim_cfg.get("b_mean"),
+            b_sigma=sim_cfg.get("b_sigma"),
             Z=sim_cfg["Z"],
             A=sim_cfg["A"],
-            b_min=sim_cfg["b_min"],
-            b_max=sim_cfg["b_max"],
             layers=sim_cfg["layers"],
+            eloss_scaling=sim_cfg["eloss_scaling"],
             reaction_prob=sim_cfg["reaction_prob"],
-            layer_thickness=sim_cfg["layer_thickness"],
-            eloss_scaling=sim_cfg["eloss_scaling"]
-        ))
+            layer_thickness=sim_cfg["layer_thickness"]
+        )
         df.to_csv(raw_path, index=False)
         print(f"Saved raw dataset to {raw_path}")
         save_metadata(config_path, len(df), raw_path, args_dict)

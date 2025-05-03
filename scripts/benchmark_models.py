@@ -25,7 +25,7 @@ MODELS = {
     "gb": GradientBoostingClassifier(random_state=42)
 }
 
-def plot_confusion_matrix(cm, classes, title, save_path=None):
+def plot_confusion_matrix(cm, classes, title, save_path=None, show_plot=True, save_csv_path=None):
     """
      Plot Confusion Matrix
     """    
@@ -38,9 +38,18 @@ def plot_confusion_matrix(cm, classes, title, save_path=None):
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path)
-    plt.show()
+    if save_csv_path:
+        df_cm = pd.DataFrame(cm, index=classes, columns=classes)
+        df_cm.round(3).to_csv(save_csv_path)
+    if show_plot:
+        plt.show()
+    else:
+        print(title)
+        df_cm = pd.DataFrame(cm, index=classes, columns=classes)
+        print(df_cm.round(1))
+        plt.close()
 
-def run_benchmark(config_path, save_outputs):
+def run_benchmark(config_path, save_outputs, show_plots):
     """
     Run the benchmark and save the output if needed
     """    
@@ -98,8 +107,12 @@ def run_benchmark(config_path, save_outputs):
         # Confusion matrix
         cm = confusion_matrix(y_test, y_pred, normalize='true') * 100
         cm_title = f"{key.upper()} - Normalized Confusion Matrix"
-        save_path = results_dir / f"{key}_confusion.png" if save_outputs else None
-        plot_confusion_matrix(cm, classes=np.unique(y), title=cm_title, save_path=save_path)
+        save_img_path = results_dir / f"{key}_confusion.png" if save_outputs else None
+        save_csv_path = results_dir / f"{key}_confusion.csv" if save_outputs else None
+        plot_confusion_matrix(
+            cm, classes=np.unique(y), title=cm_title,
+            save_path=save_img_path, show_plot=show_plots, save_csv_path=save_csv_path
+        )
 
         # Feature importance or permutation importance
         print("\nFeature Importances:")
@@ -122,6 +135,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Benchmark ML models on smeared simulation data")
     parser.add_argument("--config", type=str, required=True, help="Path to config YAML")
     parser.add_argument("--save", action="store_true", help="Save reports and plots")
+    parser.add_argument("--no-show", action="store_true", help="Do not show plots")
     args = parser.parse_args()
 
-    run_benchmark(args.config, args.save)
+    run_benchmark(args.config, args.save, show_plots=not args.no_show)
