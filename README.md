@@ -37,7 +37,7 @@ MLISA simulates a beam of particles (defined by mass number `A` and charge `Z`) 
 
 This process mimics what might happen in a real solid active target setup, providing realistic data for machine learning model development.
 
-### Usage
+### Usage:
 
 Simulate and smear (default config)
 
@@ -75,7 +75,7 @@ python3 scripts/generate_data.py -n 50000
 
 The `visualize_data.py` script creates useful plots of the simulated data.
 
-### Usage
+### Usage:
 
 3D histogram of energy loss per layer
 
@@ -101,13 +101,15 @@ All plots can be saved using `--outdir results/sim1/` and disabled from displayi
 
 The `benchmark_models.py` script trains and evaluates multiple ML models for predicting the reaction layer.
 
-### Run ML training and evaluation
+### Usage:
+
+Run ML training and evaluation
 
 ```bash
 python3 scripts/benchmark_models.py --config configs/sim1.yaml
 ```
 
-### Save all reports, plots, and feature importances
+Save all reports, plots, and feature importances
 
 ```bash
 python3 scripts/benchmark_models.py --config configs/sim1.yaml --save
