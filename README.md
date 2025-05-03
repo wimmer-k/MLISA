@@ -1,20 +1,23 @@
 # MLISA - Machine Learning for LISA
 
-**MLISA** is a simulation and analysis toolkit developed for the **LISA** project (*LIfetime measurements with Solid Active targets*). It is designed to generate and prepare data from active target detectors for use in machine learning workflows, particularly for identifying reaction layers, estimating energy loss, and supporting lifetime analysis.
+**MLISA** is a simulation and analysis toolkit developed for the **LISA** project (*LIfetime measurements with Solid Active targets*). It simulates beam particles passing through stacked active target layers, optionally undergoing nuclear reactions and depositing energy. The data is structured for direct use in machine learning models to analyze where (and later what) reactions occur.
 
 This framework simulates particle interactions in layered solid targets, models detector resolution effects, and produces clean, structured outputs for analysis or ML training.
+
+MLISA consists of modular Python scripts for data generation, simulation, visualization, and machine learning analysis.
+
 
 ---
 
 ##  Features
 
 - Physics-driven simulation (relativistic energy loss)
-- Configurable particle types, layer thicknesses, and beam properties
-- Layer-specific energy smearing (Gaussian)
-- YAML-configurable CLI for data generation
-- Metadata logging and automatic output structuring
-- Structured `.csv` output, ready for ML training or analysis
-- Model benchmarking via a separate CLI tool
+- Configurable particle type, beam velocity distribution, and layer stack
+- Layer-specific energy smearing (Gaussian resolution)
+- CLI tools with YAML config support
+- Rich visualization options for quality control
+- Benchmarking and evaluation of ML models
+- Structured `.csv` and `.yaml` outputs with metadata
 
 ---
 
@@ -50,32 +53,78 @@ python3 scripts/generate_data.py --smear-only
 python3 scripts/generate_data.py -n 50000
 ```
 
+---
+
+## Visualizing Energy Loss Distributions
+
+The `visualize_data.py` script creates useful plots of the simulated data.
+
+### 3D histogram of energy loss per layer
+
+```bash
+python3 scripts/visualize_data.py --data data/sim1/smeared.csv --plot-type hist3d
+```
+
+Add `--by-reaction` to show separate subplots for each reaction layer.
+
+### Scatter plots of energy loss vs. b_in
+
+```bash
+python3 scripts/visualize_data.py --data data/sim1/smeared.csv --plot-type scatter
+```
+
+You can combine with `--by-reaction` to generate separate scatter plots by reaction layer.
+
+All plots can be saved using `--outdir results/sim1/` and disabled from displaying with `--no-show`.
+
+---
+
 ## Model benchmarking
 
-###   Train and evaluate multiple ML models on your generated data:
+The `benchmark_models.py` script trains and evaluates multiple ML models for predicting the reaction layer.
+
+### Run ML training and evaluation
 
 ```bash
 python3 scripts/benchmark_models.py --config configs/sim1.yaml
 ```
 
-###   To also save confusion matrices, reports, and feature importances:
+### Save all reports, plots, and feature importances
 
 ```bash
 python3 scripts/benchmark_models.py --config configs/sim1.yaml --save
 ```
-Results are saved to: results/sim1/
+
+Results are saved to a `results/<config_name>/` folder, including:
+
+- Normalized confusion matrices (`.png` and `.csv`)
+- Classification reports (`.txt`)
+- Feature importances (`.csv`)
+
+---
 
 ## Output Structure
 
-Each run creates a folder based on the config filename (e.g. sim1.yaml -> data/sim1/):
+Each simulation run produces structured outputs in a `data/<config_name>/` folder:
 
 ```bash
 data/sim1/
-|-- raw.csv                # Truth-level simulation (no smearing)
-|-- raw.meta.yaml          # Metadata snapshot
-|-- smeared.csv            # With detector-like resolution applied
-|-- smeared.meta.yaml      # Metadata snapshot
+|-- raw.csv                # Truth-level simulation data (no smearing)
+|-- raw.meta.yaml          # Simulation parameters snapshot
+|-- smeared.csv            # Includes Gaussian detector resolution effects
+|-- smeared.meta.yaml      # Smearing parameters snapshot
 ```
+
+Additional results from ML evaluation and visualizations are saved in:
+
+```bash
+results/sim1/
+|-- *.png                  # Plots (3D histograms, scatter plots, confusion matrices)
+|-- *.csv                  # Feature importance, confusion matrix tables
+|-- *.txt                  # Model evaluation summaries
+```
+
+---
 
 ## Configuration Example (configs/sim1.yaml)
 
@@ -84,6 +133,7 @@ simulation:
   Z: 50
   A: 132
   n_events: 100000
+  velocity_distribution: uniform
   b_min: 0.6
   b_max: 0.7
   reaction_prob: 0.1
@@ -100,3 +150,13 @@ analysis:
   test_size: 0.25
   models: ['logreg', 'rf', 'knn', 'gb']
 ```
+---
+
+## Coming Soon
+
+- Intra-layer reaction depth modeling
+- Support for different reaction types (Z change)
+- Regression-based position prediction
+- Integration with GEANT-based truth data
+
+---

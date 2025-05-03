@@ -117,7 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--outdir", type=str, default=None, help="Folder to save plots")
     parser.add_argument("--no-show", action="store_true", help="Don't show plots interactively")
     parser.add_argument("--by-reaction", action="store_true", help="Split plots by reaction_layer")
-    parser.add_argument("--plot-type", type=str, default="hist3d", choices=["hist3d", "correlation"], help="Which plot to generate")
+    parser.add_argument("--plot-type", type=str, default="hist3d", choices=["hist3d", "scatter"], help="Which plot to generate")
     args = parser.parse_args()
 
     df = pd.read_csv(args.data).dropna()
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         plot_energy_distribution_3d(
             df, outdir=args.outdir, show_plot=not args.no_show, by_reaction=args.by_reaction
         )
-    elif args.plot_type == "correlation":
+    elif args.plot_type == "scatter":
         plot_scatter_vs_b_in(
             df, outdir=args.outdir, show_plot=not args.no_show, by_reaction=args.by_reaction
         )
