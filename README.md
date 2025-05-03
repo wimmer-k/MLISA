@@ -23,31 +23,47 @@ MLISA consists of modular Python scripts for data generation, simulation, visual
 
 ## Simulation and data generation
 
-###  Simulate and smear (default config)
+MLISA simulates a beam of particles (defined by mass number `A` and charge `Z`) impinging on a multi-layered active target. Each particle is assigned a velocity (`b_in`) drawn from either a uniform or Gaussian distribution. As the particle traverses the target layers:
+
+1. **Energy loss is calculated** in each layer using a relativistic Bethe-type formula, scaled by layer thickness and a tunable energy loss factor.
+2. With a configurable probability, the particle may undergo a **nuclear reaction** in any given layer.
+3. If a reaction occurs:
+   - The energy loss behavior may change due to reduced charge (`Z`) of the product.
+   - The particle continues with modified properties through the remaining layers.
+4. The simulation records:
+   - Initial and final velocities (`b_in`, `b_out`)
+   - Energy loss per layer (`dE_1` to `dE_N`)
+   - The layer in which the reaction occurred (or 0 if no reaction)
+
+This process mimics what might happen in a real solid active target setup, providing realistic data for machine learning model development.
+
+### Usage
+
+Simulate and smear (default config)
 
 ```bash
 python3 scripts/generate_data.py
 ```
 
-###  Use a custom config file
+Use a custom config file
 
 ```bash
 python3 scripts/generate_data.py --config configs/sim1.yaml
 ```
 
-###   Just generate raw data
+Just generate raw data
 
 ```bash
 python3 scripts/generate_data.py --raw-only
 ```
 
-###   Just smear existing raw data
+Just smear existing raw data
 
 ```bash
 python3 scripts/generate_data.py --smear-only
 ```
 
-###   Control number of events
+Control number of events
 
 ```bash
 python3 scripts/generate_data.py -n 50000
@@ -59,7 +75,9 @@ python3 scripts/generate_data.py -n 50000
 
 The `visualize_data.py` script creates useful plots of the simulated data.
 
-### 3D histogram of energy loss per layer
+### Usage
+
+3D histogram of energy loss per layer
 
 ```bash
 python3 scripts/visualize_data.py --data data/sim1/smeared.csv --plot-type hist3d
@@ -67,7 +85,7 @@ python3 scripts/visualize_data.py --data data/sim1/smeared.csv --plot-type hist3
 
 Add `--by-reaction` to show separate subplots for each reaction layer.
 
-### Scatter plots of energy loss vs. b_in
+Scatter plots of energy loss vs. b_in
 
 ```bash
 python3 scripts/visualize_data.py --data data/sim1/smeared.csv --plot-type scatter
@@ -108,7 +126,7 @@ Results are saved to a `results/<config_name>/` folder, including:
 Each simulation run produces structured outputs in a `data/<config_name>/` folder:
 
 ```bash
-data/sim1/
+data/<config_name>/
 |-- raw.csv                # Truth-level simulation data (no smearing)
 |-- raw.meta.yaml          # Simulation parameters snapshot
 |-- smeared.csv            # Includes Gaussian detector resolution effects
@@ -118,7 +136,7 @@ data/sim1/
 Additional results from ML evaluation and visualizations are saved in:
 
 ```bash
-results/sim1/
+results/<config_name>/
 |-- *.png                  # Plots (3D histograms, scatter plots, confusion matrices)
 |-- *.csv                  # Feature importance, confusion matrix tables
 |-- *.txt                  # Model evaluation summaries
@@ -157,6 +175,6 @@ analysis:
 - Intra-layer reaction depth modeling
 - Support for different reaction types (Z change)
 - Regression-based position prediction
-- Integration with GEANT-based truth data
+- Integration of GEANT-based data
 
 ---
