@@ -45,7 +45,7 @@ python3 scripts/generate_data.py
 Use a custom config file
 
 ```bash
-python3 scripts/generate_data.py --config configs/sim1.yaml
+python3 scripts/generate_data.py --config config/sim1.yaml
 ```
 
 Just generate raw data
@@ -99,13 +99,13 @@ The `benchmark_models.py` script trains and evaluates multiple ML models for pre
 Run ML training and evaluation
 
 ```bash
-python3 scripts/benchmark_models.py --config configs/sim1.yaml
+python3 scripts/benchmark_models.py --config config/sim1.yaml
 ```
 
 Save all reports, plots, and feature importances
 
 ```bash
-python3 scripts/benchmark_models.py --config configs/sim1.yaml --save
+python3 scripts/benchmark_models.py --config config/sim1.yaml --save
 ```
 
 Results are saved to a `results/<config_name>/` folder, including:
@@ -135,7 +135,7 @@ results/<config_name>/
 |-- *.txt                  # Model evaluation summaries
 ```
 
-## Configuration Example (configs/sim1.yaml)
+## Configuration Example (config/sim1.yaml)
 
 ```yaml
 simulation:
