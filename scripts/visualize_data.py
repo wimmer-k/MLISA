@@ -1,12 +1,10 @@
 import argparse
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
-from mpl_toolkits.mplot3d import Axes3D
-import seaborn as sns
+from utils.data_loading import load_from_root, load_from_csv
 
-def plot_energy_distribution_3d(df, outdir, bins=50, by_reaction=False, max_layer=5, show_plot=True):
+
+def plot_energy_distribution_3d(df, outdir, bins=100, derange=None, by_reaction=False, max_layer=5, show_plot=True):
     layers = [f'dE_{i+1}' for i in range(max_layer)]
     if by_reaction:
         reaction_layers = sorted(df['reaction_layer'].unique())
@@ -17,6 +15,8 @@ def plot_energy_distribution_3d(df, outdir, bins=50, by_reaction=False, max_laye
         axes = axes.flatten()
     else:
         reaction_layers = [None]
+
+    
 
     for i, rl in enumerate(reaction_layers):
         if by_reaction:
@@ -29,7 +29,7 @@ def plot_energy_distribution_3d(df, outdir, bins=50, by_reaction=False, max_laye
         label = "all" if rl is None else f"reaction_{rl}"
 
         for j, col in enumerate(layers):
-            counts, edges = np.histogram(data[col], bins=bins)
+            counts, edges = np.histogram(data[col].to_numpy(), bins=bins, range=derange)
             xpos = (edges[:-1] + edges[1:]) / 2
             ypos = np.full_like(xpos, j + 1)
             zpos = np.zeros_like(xpos)
@@ -145,19 +145,35 @@ def plot_reaction_depth_distribution(df, outdir=None, show_plot=True):
         plt.close()
         
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="3D plot of energy loss histograms")
-    parser.add_argument("--data", type=str, required=True, help="Path to smeared.csv")
+    parser = argparse.ArgumentParser(description="3D plot of energy loss histograms (ROOT or CSV)")
+    parser.add_argument("--data", type=str, required=True,
+                        help="Path to ROOT file (default) or CSV when --source csv")
+    parser.add_argument("--tree", type=str, default=None,
+                        help="TTree name (default: first TTree found)")
+    parser.add_argument("--source", choices=["root", "csv"], default="root",
+                        help="Data source type (default: root)")
     parser.add_argument("--outdir", type=str, default=None, help="Folder to save plots")
     parser.add_argument("--no-show", action="store_true", help="Don't show plots interactively")
     parser.add_argument("--by-reaction", action="store_true", help="Split plots by reaction_layer")
-    parser.add_argument("--plot-type", type=str, default="hist3d", choices=["hist3d", "scatter", "depth"], help="Which plot to generate")
+    parser.add_argument("--plot-type", type=str, default="hist3d",
+                        choices=["hist3d", "scatter", "depth"], help="Which plot to generate")
+    parser.add_argument("--max-layer", type=int, default=5, help="How many dE layers to load (fdEdx[0..max-1])")
     args = parser.parse_args()
+    derange = None
+    if args.source == "root":
+        df = load_from_root(args.data, tree_name=args.tree, max_layer=args.max_layer)
+        #filter only good reactions
+        df = df[(df["reaction_layer"] >= 0) & (df["reaction_layer"] <= 4)].copy()
+        #derange = [0.55,0.72]
+        derange = [300,400]
+    else:
+        df = load_from_csv(args.data, max_layer=args.max_layer)
 
-    df = pd.read_csv(args.data).dropna()
-
+        
     if args.plot_type == "hist3d":
         plot_energy_distribution_3d(
-            df, outdir=args.outdir, show_plot=not args.no_show, by_reaction=args.by_reaction
+            df, outdir=args.outdir, derange = derange, show_plot=not args.no_show,
+            by_reaction=args.by_reaction, max_layer=args.max_layer
         )
     elif args.plot_type == "scatter":
         plot_scatter_vs_b_in(
