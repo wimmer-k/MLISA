@@ -4,6 +4,7 @@ simulation:
   n_events: 100000
   reaction_prob: 0.1
   layers: 5
+  delta_Z: 1
   b_min: 0.6
   b_max: 0.7
   eloss_scaling: 0.1  # or whatever factor you need to match ~300 MeV/layer

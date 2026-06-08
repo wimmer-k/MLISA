@@ -6,9 +6,10 @@ import seaborn as sns
 from pathlib import Path
 from tqdm import tqdm
 import yaml
+import time
 from utils.data_loading import load_from_root, load_from_csv, filter_layers
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.linear_model import LogisticRegression
@@ -17,6 +18,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.inspection import permutation_importance
 from sklearn.svm import SVC
 from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.base import is_classifier
+from skl2onnx import convert_sklearn
+from skl2onnx.common.data_types import FloatTensorType
+
 try:
     from lightgbm import LGBMClassifier
     _HAS_LGBM = True
@@ -33,11 +40,14 @@ MODELS = {
     "knn": KNeighborsClassifier(n_neighbors=5),
     "gb": GradientBoostingClassifier(random_state=42),
     "svc": SVC(kernel="rbf", probability=True, random_state=42),
+    #"mlp": MLPClassifier(hidden_layer_sizes=(30,10),activation="relu",
+    "mlp": MLPClassifier(hidden_layer_sizes=(30,10),activation="relu",
+                         max_iter=1000,random_state=42)
 }
 if _HAS_LGBM:
     MODELS["lgbm"] = LGBMClassifier(random_state=42)
     
-SCALE_THESE = {"logreg", "svc", "knn"}
+SCALE_THESE = ["logreg", "svc", "knn", "mlp"]  # models that benefit from feature scaling}
 
 def _train_depth_regressors_per_layer(X_train, y_layer_train, y_depth_train, layers_unique):
     """
@@ -93,7 +103,39 @@ def plot_confusion_matrix(cm, classes, title, save_path=None, show_plot=True, sa
         print(df_cm.round(4))
         plt.close()
 
-def run_benchmark(config_path, save_outputs, show_plots, save_events=False):
+def convert_model_to_onnx(model, n_features, output_path="model.onnx"):
+    initial_type = [
+        ("float_input", FloatTensorType([None, n_features]))
+    ]
+
+    # If model is a Pipeline, get the last step.
+    # Otherwise, the model itself is the estimator.
+    if isinstance(model, Pipeline):
+        final_estimator = model.steps[-1][1]
+    else:
+        final_estimator = model
+
+    options = {}
+
+    if is_classifier(final_estimator):
+        options[id(final_estimator)] = {
+            "zipmap": False
+        }
+
+    onnx_model = convert_sklearn(
+        model,
+        initial_types=initial_type,
+        options=options,
+        target_opset=12
+    )
+
+    with open(output_path, "wb") as f:
+        f.write(onnx_model.SerializeToString())
+
+    return onnx_model
+
+def run_benchmark(config_path,save_outputs=False,show_plots=True,
+                    save_importance=False,save_events=False,save_model=False):
     """
     Run the benchmark and save the output if needed
     """    
@@ -143,34 +185,53 @@ def run_benchmark(config_path, save_outputs, show_plots, save_events=False):
 
     print(f"Running models: {model_keys}\n")
     for key in tqdm(model_keys):
-        model = MODELS[key]
+        base_model = MODELS[key]
         print(f"\n=== {key.upper()} ===")
         if key in SCALE_THESE:
-            scaler = StandardScaler()
-            X_train_proc = scaler.fit_transform(X_train)
-            X_test_proc  = scaler.transform(X_test)
+            model = make_pipeline(StandardScaler(), base_model)
         else:
-            X_train_proc, X_test_proc = X_train, X_test
+            model = base_model
 
-        model.fit(X_train_proc, y_train)
-        y_pred = model.predict(X_test_proc)
-  
+        t0 = time.perf_counter()
+        scores = cross_val_score(model, X, y, cv=5, scoring="f1_macro")
+        print(f"Cross-validation F1-macro scores: {scores}")
+        print(f"Mean: {scores.mean():.4f}, Std: {scores.std():.4f}")
+        t1 = time.perf_counter()
+        print(f"Total CV wall time: {t1 - t0:.3f} s")
+
+        t2 = time.perf_counter()
+        model.fit(X_train, y_train)
+        t3 = time.perf_counter()
+        print(f"Final fit time: {t3 - t2:.3f} s")
+        y_pred = model.predict(X_test)
+
         # Classification report
         report = classification_report(y_test, y_pred, zero_division=0, digits =4)
+        print("Classification Report:")
         print(report)
         if save_outputs:
             with open(results_dir / f"{key}_report.txt", "w") as f:
                 f.write(report)
+                f.write(f"Final fit time: {t3 - t2:.3f} s\n")
+                f.write(f"\nCross-val F1-macro scores: {scores}\n")
+                f.write(f"Mean: {scores.mean():.4f}, Std: {scores.std():.4f}\n")
+                f.write(f"Total CV time: {t1 - t0:.3f} s\n")
 
         # Confusion matrix
         cm = confusion_matrix(y_test, y_pred, normalize='true') * 100
         cm_title = f"{key.upper()} - Normalized Confusion Matrix"
-        save_img_path = results_dir / f"{key}_confusion.png" if save_outputs else None
+        save_img_path_png = results_dir / f"{key}_confusion.png" if save_outputs else None
+        save_img_path_pdf = results_dir / f"{key}_confusion.pdf" if save_outputs else None
         save_csv_path = results_dir / f"{key}_confusion.csv" if save_outputs else None
         plot_confusion_matrix(
             cm, classes=np.unique(y), title=cm_title,
-            save_path=save_img_path, show_plot=show_plots, save_csv_path=save_csv_path
+            save_path=save_img_path_png, show_plot=show_plots, save_csv_path=save_csv_path
         )
+        plot_confusion_matrix(
+            cm, classes=np.unique(y), title=cm_title,
+            save_path=save_img_path_pdf, show_plot=show_plots, save_csv_path=save_csv_path
+        )
+
         # Event-level export
         if save_outputs and save_events:
             test_index = X_test.index
@@ -183,7 +244,13 @@ def run_benchmark(config_path, save_outputs, show_plots, save_events=False):
             events_path = results_dir / f"{key}_events.csv"
             events_df.to_csv(events_path, index=False)
             print(f"[saved] {events_path}")
-            
+        # Save model as ONNX to be read in ROOT
+        if save_outputs and save_model:
+            model_path = results_dir / f"{key}_model.onnx"
+            onnx_model = convert_model_to_onnx(model,n_features=7,output_path=model_path)
+            with open(model_path, "wb") as f:
+                f.write(onnx_model.SerializeToString())
+            print(f"[saved] {model_path}")
         if args.save_importance:
             # Feature importance or permutation importance
             print("\nFeature Importances:")
@@ -209,6 +276,8 @@ if __name__ == "__main__":
     parser.add_argument("--no-show", action="store_true", help="Do not show plots")
     parser.add_argument("--save-importance", action="store_true", help="Also save feature importances")
     parser.add_argument("--save-events", action="store_true", help="Save per-event predictions CSVs for each model")
+    parser.add_argument("--save-model", action="store_true", help="Save trained models in ONNX format for ROOT usage")
     args = parser.parse_args()
 
-    run_benchmark(args.config, args.save, show_plots=not args.no_show, save_events=args.save_events)
+    run_benchmark(args.config,args.save,show_plots=not args.no_show,save_importance=args.save_importance,
+        save_events=args.save_events,save_model=args.save_model)

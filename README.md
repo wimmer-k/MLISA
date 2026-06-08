@@ -108,6 +108,12 @@ Save all reports, plots, and feature importances
 python3 scripts/benchmark_models.py --config config/sim1.yaml --save
 ```
 
+Save model and export to ONNX format
+
+```bash
+python3 scripts/benchmark_models.py --config config/sim1.yaml --save-model
+```
+
 Results are saved to a `results/<config_name>/` folder, including:
 
 - Normalized confusion matrices (`.png` and `.csv`)
@@ -133,6 +139,7 @@ results/<config_name>/
 |-- *.png                  # Plots (3D histograms, scatter plots, confusion matrices)
 |-- *.csv                  # Feature importance, confusion matrix tables
 |-- *.txt                  # Model evaluation summaries
+|-- *.onnx                 # Exported fitted model 
 ```
 
 ## Configuration Example (config/sim1.yaml)
@@ -157,7 +164,7 @@ analysis:
   features: ['b_in', 'b_out', 'dE_1', 'dE_2', 'dE_3', 'dE_4', 'dE_5']
   target: reaction_layer
   test_size: 0.25
-  models: ['logreg', 'rf', 'knn', 'gb']
+  models: ['logreg', 'rf', 'knn', 'gb','mlp']
 ```
 
 ## Coming Soon

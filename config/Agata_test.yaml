@@ -1,7 +1,8 @@
 data:
-  root_file: data/wiktor/50Mn_49V_for_Kathrin.root
+  root_file: data/Agata/GammaEvents_0000_test.root
   max_layer: 5
-  
+  trained_model: results/Agata/mlp_model.onnx
+
 analysis:
   features: ['b_in', 'b_out', 'dE_1', 'dE_2', 'dE_3', 'dE_4', 'dE_5']
   target: reaction_layer
@@ -9,5 +10,5 @@ analysis:
   #models: ['logreg', 'rf', 'knn', 'gb']
   #models: ['logreg', 'rf', 'knn']
   test_size: 0.25
-  layer_min: 0
-  layer_max: 4
+  layer_min: 1
+  layer_max: 5

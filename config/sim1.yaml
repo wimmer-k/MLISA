@@ -20,5 +20,6 @@ detector:
 analysis:
   features: ['b_in', 'b_out', 'dE_1', 'dE_2', 'dE_3', 'dE_4', 'dE_5']
   target: reaction_layer
-  models: ['logreg', 'rf', 'knn', 'gb']
+  #models: ['logreg', 'rf', 'knn', 'gb',]
+  models: ['gb']
   test_size: 0.25
